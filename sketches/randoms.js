@@ -1,15 +1,13 @@
 let tilesX = 1920;
 let tilesY = 1080;
-let tileSize = 1;
-
+let tileSize;
 const adjacentRelative = [
-  [-1, 0], [1, 0], [0, -1], [0, 1], // Cardinal directions
-  [-1, -1], [1, -1], [-1, 1], [1, 1] // Diagonals
+  [-1, 0], [1, 0], [0, -1], [0, 1],
+  // [-1, -1], [1, -1], [-1, 1], [1, 1]
 ];
 
 let centreX, centreY;
 let patternStep = 0;
-let patternRing = 1, patternEpoch = 0;
 let changedCells = [];
 let pattern = [];
 let patternSet = new Set();
@@ -18,12 +16,20 @@ let mainGrid;
 let startTime = 0;
 let finished = false;
 
+let autoRun = true;
+let stepsPerFrame = tilesX * tilesY / (30 * 30); // total tiles / (30 FPS * 30 seconds expected duration)
+const targetFrameTimeAutoRunOn = 1000 / 30; // ~33ms for 30 FPS
+const targetFrameTimeAutoRunOff = 1000 / 30; // ~33ms for 30 FPS
+const targetFrameTime = autoRun ? targetFrameTimeAutoRunOn : targetFrameTimeAutoRunOff;
+const minSteps = 1;
+const maxSteps = tilesX * tilesY;
+
 function xyKey(x, y) {
   return `${x},${y}`;
 }
 
 function setup() {
-  // saveGif("randoms.gif", 16);
+  tileSize = ceil(min(windowWidth, windowHeight) / max(tilesX, tilesY));
   mainGrid = Array.from({ length: tilesX }, () => Array(tilesY).fill(null));
   centreX = floor(tilesX / 2);
   centreY = floor(tilesY / 2);
@@ -31,10 +37,8 @@ function setup() {
   createCanvas(tilesX * tileSize, tilesY * tileSize);
   colorMode(HSB, 360, 100, 100, 100);
   noStroke();
-
   background(0, 0, 0);
 
-  // Fill unfilledSet with all possible coordinates
   for (let x = 0; x < tilesX; x++) {
     for (let y = 0; y < tilesY; y++) {
       unfilledSet.add(xyKey(x, y));
@@ -45,14 +49,20 @@ function setup() {
   patternSet.add(xyKey(centreX, centreY));
 
   startTime = millis();
-  loop();
+
+  if (autoRun) {
+    loop();
+  } else {
+    noLoop();
+    redraw();
+  }
 }
 
 function draw() {
   if (finished) return;
 
-  // Fill as many as possible per frame for speed
-  let stepsPerFrame = 1080;
+  let frameStart = performance.now();
+
   for (let i = 0; i < stepsPerFrame; i++) {
     if (patternStep >= tilesX * tilesY || pattern.length === 0) {
       finished = true;
@@ -64,6 +74,7 @@ function draw() {
     patternIncrement();
   }
 
+  // OPTION 1: Rectangles. You'd think this would be slower, but it performs well enough.
   for (const [x, y] of changedCells) {
     const c = mainGrid[x][y];
     if (c) {
@@ -71,21 +82,54 @@ function draw() {
       rect(x * tileSize, y * tileSize, tileSize, tileSize);
     }
   }
+
+  // OPTION 2: Pixels. Theoretically faster but needs further testing.
+  // loadPixels();
+  // for (const [x, y] of changedCells) {
+  //   const c = mainGrid[x][y];
+  //   if (c) {
+  //     for (let dx = 0; dx < tileSize; dx++) {
+  //       for (let dy = 0; dy < tileSize; dy++) {
+  //         let px = x * tileSize + dx;
+  //         let py = y * tileSize + dy;
+  //         if (px < width && py < height) {
+  //           let idx = 4 * (py * width + px);
+  //           pixels[idx + 0] = red(c);
+  //           pixels[idx + 1] = green(c);
+  //           pixels[idx + 2] = blue(c);
+  //           pixels[idx + 3] = 255;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  // updatePixels();
   changedCells = [];
+
+  let frameEnd = performance.now();
+  let frameTime = frameEnd - frameStart;
+
+  if (!finished) {
+    let newSteps = stepsPerFrame * (targetFrameTime / frameTime);
+    stepsPerFrame = constrain(Math.round(newSteps), minSteps, maxSteps);
+    // Uncomment for debugging:
+    // console.log(`stepsPerFrame: ${stepsPerFrame}, frameTime: ${frameTime.toFixed(2)}ms`);
+  }
 }
 
-// mouseClicked no longer needed
+function mousePressed() {
+  if (!autoRun && !finished) {
+    redraw();
+  }
+}
 
 function patternIncrement() {
-  if (patternStep >= tilesX * tilesY || pattern.length === 0) {
-    return;
-  }
+  if (patternStep >= tilesX * tilesY || pattern.length === 0) return;
 
   const randomIndex = floor(random(pattern.length));
   const [x, y] = pattern[randomIndex];
 
   if (!unfilledSet.has(xyKey(x, y))) {
-    // Already filled, remove from pattern efficiently
     removePatternAt(randomIndex);
     return;
   }
@@ -93,16 +137,11 @@ function patternIncrement() {
   const adjacents = adjacentCoords(x, y);
   const filledCount = numFilled(mainGrid, adjacents);
 
-  let newColour = color(random(360), random(30, 90), random(40, 90));
+  let newColour = color(random(360), random(40, 70), random(40, 60));
   if (filledCount > 0) {
     const values = getValues(mainGrid, adjacents);
     const average = averageHSB(values);
-    newColour = addNoise(
-      average,
-      5,
-      2,
-      2
-    );
+    newColour = addNoise(average, 2, 2, 2);
   }
 
   setPixel(x, y, newColour, randomIndex);
@@ -116,7 +155,6 @@ function setPixel(x, y, color, patternIdx) {
   changedCells.push([x, y]);
   unfilledSet.delete(xyKey(x, y));
 
-  // Remove from pattern efficiently
   if (patternIdx !== undefined) {
     removePatternAt(patternIdx);
   } else {
@@ -124,7 +162,6 @@ function setPixel(x, y, color, patternIdx) {
     if (idx !== -1) removePatternAt(idx);
   }
 
-  // Add unfilled adjacents to pattern
   for (const [nx, ny] of adjacentCoords(x, y)) {
     const key = xyKey(nx, ny);
     if (unfilledSet.has(key) && !patternSet.has(key)) {
@@ -134,22 +171,12 @@ function setPixel(x, y, color, patternIdx) {
   }
 }
 
-// O(1) removal from pattern array and patternSet
 function removePatternAt(idx) {
   const [x, y] = pattern[idx];
-  const key = xyKey(x, y);
-  patternSet.delete(key);
+  patternSet.delete(xyKey(x, y));
   const last = pattern.length - 1;
-  if (idx !== last) {
-    pattern[idx] = pattern[last];
-  }
+  if (idx !== last) pattern[idx] = pattern[last];
   pattern.pop();
-}
-
-function fillAll(grid, cellList, color) {
-  for (const [x, y] of cellList) {
-    grid[x][y] = color;
-  }
 }
 
 function numFilled(grid, cellList) {
@@ -169,62 +196,34 @@ function adjacentCoords(x, y) {
 }
 
 function addNoise(colour, hueNoise, saturationNoise, brightnessNoise) {
-  let h = hue(colour) + random(-hueNoise, hueNoise);
-  let s = saturation(colour) + random(-saturationNoise, saturationNoise);
-  let b = brightness(colour) + random(-brightnessNoise, brightnessNoise);
+  let h = hue(colour);
+  let s = saturation(colour);
+  let b = brightness(colour);
 
-  h = (h + 360) % 360;
-  s = constrain(s, 0, 100);
-  b = constrain(b, 0, 100);
+  if (hueNoise !== 0) h += random(-hueNoise, hueNoise);
+  if (saturationNoise !== 0) s += random(-saturationNoise, saturationNoise);
+  if (brightnessNoise !== 0) b += random(-brightnessNoise, brightnessNoise);
+
+  h = ((h % 360) + 360) % 360;
+  s = constrain(s, 1, 100);
+  b = constrain(b, 1, 100);
 
   return color(h, s, b);
 }
 
-function randomHSB() {
-  return color(random(360), 100, 100);
-}
-
 function averageHSB(colours) {
-  let sumX = 0, sumY = 0, totalS = 0, totalB = 0;
-
+  if (colours.length === 0) return color(100, 50, 50);
+  let sumSin = 0, sumCos = 0, sumS = 0, sumB = 0;
   for (const c of colours) {
-    const h = hue(c) * (Math.PI / 180);
-    sumX += Math.cos(h);
-    sumY += Math.sin(h);
-    totalS += saturation(c);
-    totalB += brightness(c);
+    let angle = radians(hue(c));
+    sumSin += Math.sin(angle);
+    sumCos += Math.cos(angle);
+    sumS += saturation(c);
+    sumB += brightness(c);
   }
-
-  let avgHue = Math.atan2(sumY, sumX) * (180 / Math.PI);
+  let avgHue = degrees(Math.atan2(sumSin, sumCos));
   if (avgHue < 0) avgHue += 360;
-
-  return color(
-    avgHue,
-    totalS / colours.length,
-    totalB / colours.length
-  );
-}
-
-// Generator for expanding pattern (not used in main logic)
-function* expandingPattern(x, y, maxDist) {
-  yield [x, y];
-  for (let d = 1; d <= maxDist; d++) {
-    const ring = [];
-
-    // Plus arms
-    ring.push([x - d, y], [x + d, y], [x, y - d], [x, y + d]);
-
-    // Edges between plus arms and corners
-    for (let offset = 1; offset < d; offset++) {
-      ring.push([x - offset, y - d], [x + offset, y - d]);
-      ring.push([x - offset, y + d], [x + offset, y + d]);
-      ring.push([x - d, y - offset], [x - d, y + offset]);
-      ring.push([x + d, y - offset], [x + d, y + offset]);
-    }
-
-    // Corners
-    ring.push([x - d, y - d], [x + d, y - d], [x - d, y + d], [x + d, y + d]);
-
-    for (const pos of ring) yield pos;
-  }
+  let avgS = sumS / colours.length;
+  let avgB = sumB / colours.length;
+  return color(avgHue, avgS, avgB);
 }
