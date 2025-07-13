@@ -1,5 +1,6 @@
-let tilesX = 100;
+let tilesX = 50;
 let tilesY = tilesX;
+let tileSize = 8;
 let adjacentRelative = [
   [0, 0, 0], // Center
   [-1, 0, -1], // Left
@@ -12,7 +13,6 @@ let adjacentRelative = [
   [1, 1, 0.1] // Bottom-right
 ];
 
-let tileSize;
 let centreX, centreY;
 let selectedX = -1, selectedY = -1;
 let patternStep = 1, patternRing = 1, patternEpoch = 0, changedCells = [];
@@ -30,7 +30,6 @@ function setup() {
     }
   }
 
-  tileSize = ceil(1000 / tilesX);
   centreX = floor(tilesX / 2);
   centreY = floor(tilesY / 2);
   selectedX = -1;
