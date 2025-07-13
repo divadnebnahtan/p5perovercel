@@ -26,10 +26,10 @@
 
       script.onerror = () => {
         document.body.innerHTML = `<h2>Sketch not found: ${sketchPath}</h2>`;
-        console.error('Sketch failed to load:', sketchPath);
       };
 
-      document.body.innerHTML = script;
+      document.body.innerHTML = '';
+      document.body.appendChild(script);
     }
   </script>
 
