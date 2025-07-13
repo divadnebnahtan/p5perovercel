@@ -22,7 +22,7 @@
 
     if (sketchPath) {
       const script = document.createElement('script');
-      script.src = sketchPath;
+      script.src = `/sketches/${sketchPath}.js`;
 
       script.onerror = () => {
         document.body.innerHTML = `<h2>Sketch not found: ${sketchPath}</h2>`;
