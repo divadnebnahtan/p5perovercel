@@ -57,7 +57,10 @@ function setup() {
 }
 
 function draw() {
-  runClick();
+  // for (let i = 0; i < maxDist; i++) {
+    runClick();
+  // }
+
   for (let cell of changedCells) {
     let x = cell[0];
     let y = cell[1];
@@ -91,6 +94,10 @@ function draw() {
 // }
 
 function runClick() {
+  if (!isLooping()) {
+    return;
+  }
+
   if (patternStep >= pattern.length) {
     patternStep = 1;
     patternRing = 1;
