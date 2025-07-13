@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!sketches/).*)",
+      "source": "/((?!sketches/|assets/|style\\.css|favicon\\.png).*)",
       "destination": "/"
     }
   ]

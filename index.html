@@ -8,6 +8,7 @@
   <title>P5pero</title>
 
   <link rel="stylesheet" type="text/css" href="style.css">
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.png">
 
   <script src="libraries/p5.min.js"></script>
   <script src="libraries/p5.sound.min.js"></script>
@@ -15,12 +16,17 @@
 
 <body>
   <h2>Bing bong</h2>
-  <a href="/random">Random</a>
-  <a href="/rings">Rings</a>
+  <a href="/gizmos">Gizmos</a>
+  <a href="/rings">Rings (W.I.P)</a>
   <script>
     const sketchPath = window.location.pathname.replace(/^\/|\/$/g, '');
 
-    if (sketchPath) {
+    if (sketchPath && !(sketchPath.endsWith('.html')
+      || sketchPath.endsWith('.js')
+      || sketchPath.endsWithWith('.css')
+      || sketchPath.startsWith('assets/')
+      || sketchPath.startsWith('sketches/'))
+    ) {
       const script = document.createElement('script');
       script.src = `/sketches/${sketchPath}.js`;
 
