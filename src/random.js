@@ -4,8 +4,8 @@ let adjacentRelative = [
   [0, 0, 0], // Center
   [-1, 0, -1], // Left
   [1, 0, 1], // Right
-  [0, -1, -0.5], // Up
-  [0, 1, 0.5], // Down
+  [0, -1, 0], // Up
+  [0, 1, 0], // Down
   [-1, -1, -0.1], // Top-left
   [1, -1, 0.1], // Top-right
   [-1, 1, -0.1], // Bottom-left
@@ -84,10 +84,10 @@ function draw() {
 }
 
 // function mouseClicked() {
-  // for (let i = 0; i < 1; i++) {
-  // runClick();
-  // }
-  // redraw();
+//   // for (let i = 0; i < 1; i++) {
+//   runClick();
+//   // }
+//   redraw();
 // }
 
 function runClick() {
