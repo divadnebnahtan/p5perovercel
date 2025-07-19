@@ -2,72 +2,85 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
     <title>P5pero</title>
 
-    <link href="style.css" rel="stylesheet" type="text/css">
+    <link href="/style.css" rel="stylesheet" type="text/css">
     <link href="/assets/favicon.png" rel="icon" type="image/x-icon">
 
-    <script src="libraries/p5.min.js"></script>
-    <script src="libraries/p5.sound.min.js"></script>
+    <script src="/libraries/p5.min.js"></script>
+    <script src="/libraries/p5.sound.min.js"></script>
 </head>
 
 <body>
-<h2>Bing bong</h2>
-<a href="/gizmos">Gizmos</a>
-<a href="/rings">Rings (W.I.P)</a>
-<a href="/randoms">Randoms (W.I.P)</a>
-<a href="/dfs">DFS</a>
-<script>
-    const sketchPath = window.location.pathname.replace(/^\/|\/$/g, '');
+    <h2>Bing bong</h2>
+    <ul class="sketchlist">
+        <li><a href="/gizmos">Gizmos</a></li>
+        <li><a href="/rings">Rings (W.I.P)</a></li>
+        <li><a href="/randoms">Randoms (W.I.P)</a></li>
+        <li><a href="/dfs">DFS</a></li>
+        <li>
+            Substrate (VERY W.I.P)
+            <ul>
+                <li><a href="/substrate/base">Base</a></li>
+                <li><a href="/substrate/circles">Circles</a></li>
+            </ul>
+        </li>
+    </ul>
 
-    if (sketchPath && !(sketchPath.endsWith('.html')
-        || sketchPath.endsWith('.js')
-        || sketchPath.endsWith('.css')
-        || sketchPath.startsWith('assets/')
-        || sketchPath.startsWith('sketches/'))
-    ) {
-        const script = document.createElement('script');
-        script.src = `/sketches/${sketchPath}.js`;
+    <script>
+        const sketchPath = window.location.pathname.replace(/^\/|\/$/g, '');
 
-        script.onerror = () => {
-            document.body.innerHTML = `<h2>Sketch not found: ${sketchPath}</h2>`;
-        };
+        if (sketchPath && !(sketchPath.endsWith('.html')
+            || sketchPath.endsWith('.js')
+            || sketchPath.endsWith('.css')
+            || sketchPath.startsWith('assets/')
+            || sketchPath.startsWith('sketches/'))
+        ) {
+            const script = document.createElement('script');
+            script.src = `/sketches/${sketchPath}.js`;
 
-        document.body.innerHTML = '';
-        const btn = document.createElement('button');
-        btn.textContent = 'Download';
-        btn.onclick = download;
-        document.body.appendChild(script);
-        document.body.appendChild(btn);
-    }
+            console.log(`${script.src}`);
 
-    function download() {
-        const canvas = document.querySelector('canvas');
-        if (!canvas) {
-            console.error('No canvas found on the page');
-            return;
+            script.onerror = () => {
+                document.body.innerHTML = `<h2>Sketch not found: ${sketchPath}</h2>`;
+            };
+
+            document.body.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.textContent = 'Download';
+            btn.onclick = download;
+            document.body.appendChild(script);
+            document.body.appendChild(btn);
         }
 
-        const dataURL = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
+        function download() {
+            const canvas = document.querySelector('canvas');
+            if (!canvas) {
+                console.error('No canvas found on the page');
+                return;
+            }
 
-        const now = new Date();
-        const formattedDate = now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0') + ' ' +
-            String(now.getHours()).padStart(2, '0') + '.' +
-            String(now.getMinutes()).padStart(2, '0') + '.' +
-            String(now.getSeconds()).padStart(2, '0');
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
 
-        link.download = `${formattedDate} ${sketchPath}.png`;
-        link.href = dataURL;
-        link.click();
-        document.body.removeChild(link);
-    }
-</script>
+            const now = new Date();
+            const formattedDate = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + '.' +
+                String(now.getMinutes()).padStart(2, '0') + '.' +
+                String(now.getSeconds()).padStart(2, '0');
+
+            link.download = `${formattedDate} ${sketchPath}.png`;
+            link.href = dataURL;
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 
 </body>
+
 </html>
