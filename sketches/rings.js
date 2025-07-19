@@ -1,6 +1,6 @@
-let tilesX = 1000;
-let tilesY = tilesX;
-let tileSize = 1000 / tilesX;
+let tilesX = 1920;
+let tilesY = 1080;
+let tileSize = 1;
 let adjacentRelative = [
   [-1, 0], // Left
   [1, 0], // Right
@@ -23,10 +23,7 @@ function setup() {
   mainGrid = [];
 
   for (let i = 0; i < tilesX; i++) {
-    mainGrid[i] = [];
-    for (let j = 0; j < tilesY; j++) {
-      mainGrid[i][j] = null;
-    }
+    mainGrid[i] = new Array(tilesY).fill(null); // Use fill for faster init
   }
 
   centreX = floor(tilesX / 2);
@@ -38,42 +35,32 @@ function setup() {
   pattern = [];
 
   for (let [i, j] of expandingPattern(centreX, centreY, maxDist)) {
-    if (i < 0 || i >= tilesX || j < 0 || j >= tilesY) {
-      continue;
-    }
+    if (i < 0 || i >= tilesX || j < 0 || j >= tilesY) continue;
     pattern.push([i, j]);
   }
 
-  createCanvas(tilesX * tileSize, tilesX * tileSize);
+  createCanvas(tilesX * tileSize, tilesY * tileSize);
   colorMode(HSB, 360.0, 100.0, 100.0, 100.0);
-  noLoop();
   noStroke();
 
   background(0, 0, 0);
   setPixel(centreX, centreY, color(random(360), random(30, 60), random(40, 90)));
+
+  // Start the animation loop
+  loop();
 }
 
 function draw() {
-  // background(220);
+  // Process a batch of steps per frame for speed
+  let stepsPerFrame = 1;
+  let stepsDone = 0;
 
-  // if (mouseIsPressed) {
-  //   patternIncrement();
-  // }
+  while (stepsDone < stepsPerFrame && patternStep < pattern.length) {
+    patternIncrementRing();
+    stepsDone++;
+  }
 
-
-  // for (let i = 0; i < tilesX; i++) {
-  //   for (let j = 0; j < tilesY; j++) {
-  //     let c = mainGrid[i][j];
-  //     // print(`(${i}, ${j}): ${c}`);
-  //     if (c) {
-  //       fill(c);
-  //     } else {
-  //       fill(0, 0, 0);
-  //     }
-  //     rect(i * tileSize, j * tileSize, tileSize, tileSize);
-  //   }
-  // }
-
+  // Draw only changed cells
   for (let cell of changedCells) {
     let x = cell[0];
     let y = cell[1];
@@ -83,29 +70,14 @@ function draw() {
       rect(x * tileSize, y * tileSize, tileSize, tileSize);
     }
   }
-
   changedCells = [];
 
-}
-
-function mouseClicked() {
-  for (let i = 0; i < 10; i++) {
-    if (patternStep >= pattern.length) {
-      patternStep = 1;
-      patternRing = 1;
-      patternEpoch++;
-      // for (let i = 0; i < tilesX; i++) {
-      //   for (let j = 0; j < tilesY; j++) {
-      //     setPixel(i, j, null);
-      //   }
-      // }
-      setPixel(centreX, centreY, color(random(360), random(30, 90), random(40, 90)));
-      // redraw();
-      // return;
-    }
-    patternIncrementRing();
+  // If finished, stop looping
+  if (patternStep >= pattern.length) {
+    noLoop();
+    // Optionally, you can print or alert when done
+    // print("Pattern complete.");
   }
-  redraw();
 }
 
 function patternIncrementRing() {
@@ -135,15 +107,15 @@ function patternIncrement() {
   let filledCount = numFilled(mainGrid, adjacents);
 
 
-  let newColour = randomHSB();
+  let newColour = color(random(360), random(40, 70), random(40, 60));
   if (filledCount > 0) {
     let values = getValues(mainGrid, adjacents);
     let average = averageHSB(values);
     newColour = addNoise(
       average,
-      15 / (patternEpoch + 1),
-      5 / (patternEpoch + 1),
-      5 / (patternEpoch + 1),
+      2,
+      3,
+      8,
     );
   }
 
@@ -210,21 +182,14 @@ function addNoise(colour, hueNoise, saturationNoise, brightnessNoise) {
   let s = saturation(colour);
   let b = brightness(colour);
 
-  h += random(-hueNoise, hueNoise);
-  s += random(-saturationNoise, saturationNoise);
-  b += random(-brightnessNoise, brightnessNoise);
+  if (hueNoise !== 0) h += random(-hueNoise, hueNoise);
+  if (saturationNoise !== 0) s += random(-saturationNoise, saturationNoise);
+  if (brightnessNoise !== 0) b += random(-brightnessNoise, brightnessNoise);
 
-  h = h % 360; // wrap around hue
-  s = constrain(s, 0, 100);
-  b = constrain(b, 0, 100);
+  h = ((h % 360) + 360) % 360;
+  s = constrain(s, 1, 100);
+  b = constrain(b, 1, 100);
 
-  return color(h, s, b);
-}
-
-function randomHSB() {
-  let h = random(360);
-  let s = 100; // random(100);
-  let b = 100; // random(100);
   return color(h, s, b);
 }
 
