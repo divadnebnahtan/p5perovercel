@@ -9,9 +9,7 @@ const adjacentRelative = [
 let centreX, centreY;
 let patternStep = 0;
 let changedCells = [];
-let pattern = [];
 let path = [];
-let patternSet = new Set();
 let unfilledSet = new Set();
 let mainGrid;
 let startTime = 0;
@@ -46,9 +44,8 @@ function setup() {
     }
   }
 
-  pattern.push([centreX, centreY]);
-  path.push([0, 0]);
-  patternSet.add(xyKey(centreX, centreY));
+  path.push([centreX, centreY]);
+  unfilledSet.delete(xyKey(centreX, centreY));
 
   startTime = millis();
 
@@ -66,7 +63,7 @@ function draw() {
   let frameStart = performance.now();
 
   for (let i = 0; i < stepsPerFrame; i++) {
-    if (patternStep >= tilesX * tilesY || pattern.length === 0) {
+    if (patternStep >= tilesX * tilesY) {
       finished = true;
       noLoop();
       let elapsed = millis() - startTime;
@@ -76,7 +73,6 @@ function draw() {
     patternIncrement();
   }
 
-  // OPTION 1: Rectangles. You'd think this would be slower, but it performs well enough.
   for (const [x, y] of changedCells) {
     const c = mainGrid[x][y];
     if (c) {
@@ -85,27 +81,6 @@ function draw() {
     }
   }
 
-  // OPTION 2: Pixels. Theoretically faster but needs further testing.
-  // loadPixels();
-  // for (const [x, y] of changedCells) {
-  //   const c = mainGrid[x][y];
-  //   if (c) {
-  //     for (let dx = 0; dx < tileSize; dx++) {
-  //       for (let dy = 0; dy < tileSize; dy++) {
-  //         let px = x * tileSize + dx;
-  //         let py = y * tileSize + dy;
-  //         if (px < width && py < height) {
-  //           let idx = 4 * (py * width + px);
-  //           pixels[idx + 0] = red(c);
-  //           pixels[idx + 1] = green(c);
-  //           pixels[idx + 2] = blue(c);
-  //           pixels[idx + 3] = 255;
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-  // updatePixels();
   changedCells = [];
 
   let frameEnd = performance.now();
@@ -131,27 +106,18 @@ function dfsNext() {
         let adjacents = adjacentCoords(x, y).filter(([nx, ny]) => unfilledSet.has(xyKey(nx, ny)));
         if (adjacents.length > 0) {
             let newPos = selectRandom(adjacents);
-            if (adjacents.length > 1) {
-                path.push([x, y]);
-            }
+            path.push([x, y]);
             path.push(newPos);
             return newPos;
         }
     }
+    return [0, 0]
 }
 
 function patternIncrement() {
-  if (patternStep >= tilesX * tilesY || pattern.length === 0) return;
+  if (patternStep >= tilesX * tilesY) return;
 
   let [x, y] = dfsNext();
-  
-  const randomIndex = 0;
-
-
-  if (!unfilledSet.has(xyKey(x, y))) {
-    removePatternAt(randomIndex);
-    return;
-  }
 
   const adjacents = adjacentCoords(x, y);
   const filledCount = numFilled(mainGrid, adjacents);
@@ -163,7 +129,7 @@ function patternIncrement() {
     newColour = addNoise(average, 2, 2, 2);
   }
 
-  setPixel(x, y, newColour, randomIndex);
+  setPixel(x, y, newColour);
   patternStep++;
 }
 
@@ -171,35 +137,12 @@ function selectRandom(list) {
     return list[floor(random(list.length))]
 }
 
-function setPixel(x, y, color, patternIdx) {
+function setPixel(x, y, color) {
   if (!unfilledSet.has(xyKey(x, y))) return;
 
   mainGrid[x][y] = color;
   changedCells.push([x, y]);
   unfilledSet.delete(xyKey(x, y));
-
-  if (patternIdx !== undefined) {
-    removePatternAt(patternIdx);
-  } else {
-    const idx = pattern.findIndex(([px, py]) => px === x && py === y);
-    if (idx !== -1) removePatternAt(idx);
-  }
-
-  for (const [nx, ny] of adjacentCoords(x, y)) {
-    const key = xyKey(nx, ny);
-    if (unfilledSet.has(key) && !patternSet.has(key)) {
-      pattern.push([nx, ny]);
-      patternSet.add(key);
-    }
-  }
-}
-
-function removePatternAt(idx) {
-  const [x, y] = pattern[idx];
-  patternSet.delete(xyKey(x, y));
-  const last = pattern.length - 1;
-  if (idx !== last) pattern[idx] = pattern[last];
-  pattern.pop();
 }
 
 function numFilled(grid, cellList) {
